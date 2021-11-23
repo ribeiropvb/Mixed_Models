@@ -1,0 +1,77 @@
+---
+title: "Mixed Models"
+author: "Pedro Victor Brasil Ribeiro"
+date: "22/11/2021 - Last changed in `r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(bbmle)
+library(magrittr)
+library(lme4)
+library(nlme)
+library(kableExtra)
+dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
+```
+
+# Dados Dieta - Frango
+
+```{r}
+data("ChickWeight")
+
+frango <- groupedData(
+  weight~Time|Chick, outer = ~Diet, data = ChickWeight,
+  order.groups = F,
+  labels=list(x="tempo (semana)", y="Peso corporal (g)")
+)
+
+plot(frango,between = list(y = c(0, 0.5, 0)))
+
+plot(frango, outer = T, key=FALSE) # key omite a legenda
+
+interaction.plot(frango$Time,frango$Diet,frango$weight,ylab="Peso (g)", xlab="Tempo (semana)")
+```
+
+Por tanto podemos observar que os perfis individuais apresentados para cada frango diferem entre si, apresentando um perfil médio o qual apresenta uma clara modificação na variância, quando observado o peso em relação ao tempo, perfil o qual, varia de acordo com cada dieta utilizada.
+
+
+```{r}
+mod1 <- lme(
+  fixed = weight~Time+Diet+Time:Diet,
+  random = ~1,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+mod2 <- lme(
+  fixed = weight~Time+Diet+Time:Diet,
+  random = ~ Diet,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+mod3 <- lme(
+  fixed = weight~Time+Diet+Time:Diet,
+  random = ~Time,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+mod4 <- lme(
+  fixed = weight~Time+Diet+Time:Diet,
+  random = ~Time + Diet,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+mod5 <- lme(
+  fixed = weight~Time+Diet+Time:Diet,
+  random = ~Time + Diet + Time:Diet,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+```
+
+```{r, results = 'asis'}
+coef(mod5) %>% 
+  as_tibble()# %>% 
+  #kable(format = "latex", booktabs = TRUE)
+```
+
