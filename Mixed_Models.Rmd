@@ -6,6 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+library(usethis)
 library(tidyverse)
 library(bbmle)
 library(magrittr)
@@ -13,6 +14,7 @@ library(lme4)
 library(nlme)
 library(kableExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
+use_github(protocol = 'https', auth_token = Sys.getenv('token_github'))
 ```
 
 # Dados Dieta - Frango
@@ -55,23 +57,23 @@ mod3 <- lme(
   data = frango,
   control = lmeControl(opt="optim")
 )
-mod4 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
-  random = ~Time + Diet,
-  data = frango,
-  control = lmeControl(opt="optim")
-)
-mod5 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
-  random = ~Time + Diet + Time:Diet,
-  data = frango,
-  control = lmeControl(opt="optim")
-)
+# mod4 <- lme(
+#   fixed = weight~Time+Diet+Time:Diet,
+#   random = ~Time + Diet,
+#   data = frango,
+#   control = lmeControl(opt="optim")
+# )
+# mod5 <- lme(
+#   fixed = weight~Time+Diet+Time:Diet,
+#   random = ~Time + Diet + Time:Diet,
+#   data = frango,
+#   control = lmeControl(opt="optim")
+# )
 ```
 
 ```{r, results = 'asis'}
-coef(mod5) %>% 
-  as_tibble()# %>% 
-  #kable(format = "latex", booktabs = TRUE)
+# coef(mod5) %>% 
+#   as_tibble()# %>% 
+#   #kable(format = "latex", booktabs = TRUE)
 ```
 
