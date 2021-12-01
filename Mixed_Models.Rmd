@@ -1,7 +1,12 @@
 ---
 title: "Mixed Models"
 author: "Pedro Victor Brasil Ribeiro"
-date: "22/11/2021 - Last changed in `r Sys.Date()`"
+date: "2021-11-22 - Last changed in `r Sys.Date()`"
+header-includes:
+   - \usepackage{amsmath}
+   - \usepackage{bm}
+   - \usepackage{multirow}
+   - \usepackage{float}
 output: pdf_document
 ---
 
@@ -15,6 +20,45 @@ library(nlme)
 library(kableExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
 ```
+
+# Longitudinal Data
+
+Longitudinal data, also called as panel data, is data that is collected through a series of repeated observations of the same subject overtime. Longitudinal experiments planning concern the observation of one or more variables in the same subject on different ocassions or condicion of evaluation, time is a commom factor used in most of experiment, but it can be use on distances among other factors, but in the present work it will be implied that the subjects measures is taken over time.
+
+Given that longitudinal data are measures of the same subject taken in a systematic way, is expected not null correlations between the measures, especially the one taken in consecutive. Furthermore is expected heterocedasticidy.
+
+About the data structure is expected 3 characteristics, but have in mind that in a real experiement ambient, not necessarily those characteristics can actually be hold:
+
+\begin{itemize}
+  \item Regular (in respect to time): The interval of time between one measure and other are the same;
+  \item Balanced (in respect to time): All observations are taken in the same time, on the same condictions in all subjects;
+  \item Complete: No lost observations.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Basic structure of balanced and complete longitudinal data}
+\label{tab1}
+\begin{tabular}{cccccc}
+\hline
+\multirow{2}{*}{Grupo ou Tratamento} & \multirow{2}{*}{Unidade Experimental} & \multicolumn{4}{c}{Condições de Avaliação} \\ \cline{3-6} 
+                   &           &  1           & 2           & $\cdots$  & t           \\ \hline
+\multirow{4}{*}{1} &  1        &  $y_{111}$   & $y_{112}$   & $\cdots$  & $y_{11t}$   \\
+                   &  2        &  $y_{121}$   & $y_{122}$   & $\cdots$  & $y_{12t}$   \\
+                   &  $\vdots$ &  $\vdots$    & $\vdots$    & $\ddots$  & $\vdots$    \\
+                   &  $n_1$    &  $y_{1n_11}$ & $y_{1n_12}$ & $\cdots$  & $y_{1n_1t}$ \\ \hline
+\multirow{4}{*}{2} &  1        &  $y_{211}$   & $y_{212}$   & $\cdots$  & $y_{21t}$   \\
+                   &  2        &  $y_{221}$   & $y_{222}$   & $\cdots$  & $y_{22t}$   \\
+                   &  $\vdots$ &  $\vdots$    & $\vdots$    & $\ddots$  & $\vdots$    \\
+                   &  $n_2$    &  $y_{2n_21}$ & $y_{2n_22}$ & $\cdots$  & $y_{2n_2t}$ \\ \hline
+$\vdots$           &  $\vdots$ &  $\vdots$    & $\vdots$    & $\vdots$  & $\vdots$    \\ \hline
+\multirow{4}{*}{g} &  1        &  $y_{g11}$   & $y_{g12}$   & $\cdots$  & $y_{g1t}$   \\
+                   &  2        &  $y_{g21}$   & $y_{g22}$   & $\cdots$  & $y_{g2t}$   \\
+                   &  $\vdots$ &  $\vdots$    & $\vdots$    & $\vdots$  & $\vdots$    \\
+                   &  $n_g$    &  $y_{gn_g1}$ & $y_{gn_g2}$ & $\cdots$  & $y_{gn_gt}$ \\ \hline
+\end{tabular}
+\end{table}
+
 
 # Dados Dieta - Frango
 
@@ -75,4 +119,7 @@ coef(mod3) %>%
   as_tibble() %>%
   kable(format = "latex", booktabs = TRUE)
 ```
+
+
+
 
