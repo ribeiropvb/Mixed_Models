@@ -59,6 +59,23 @@ $\vdots$           &  $\vdots$ &  $\vdots$    & $\vdots$    & $\vdots$  & $\vdot
 \end{tabular}
 \end{table}
 
+# Mixed Model
+
+For the analysis of longitudinal data to take into account the correlation between measurements taken in the same experimental unit, the adjustment of regression models with the inclusion of random effects can be considered, and it's oftenly used in these kind of cases. The usual models are:
+
+\begin{itemize}
+  \item Linear Mixed Models;
+  \item Generalized Linear Mixed Models;
+  \item Non-Linear Mixed Models.
+\end{itemize}
+
+In this we will speak specifically about Linear Mixed Models (LMM) since is the most common model used in this kind of situation. So we'll use LMM to fit the mean profile of the subjects.
+
+As usually done in Linear Models, the LMM is use to make the inference on the populacional mean of the populacion, but in the LMM is used the y conditioned in u, in other words E[Y|u]. For a LMM $X\beta$ represent the fixed effects, but is added a random effect represented by Zu, where just as X is the knew model matriz, and u the random variables used to define the condicional model, expressed as:
+
+\begin{equation}
+  E[Y|u] = X\beta + Zu
+\end{equation}
 
 # Dados Dieta - Frango
 
