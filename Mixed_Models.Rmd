@@ -20,6 +20,7 @@ library(nlme)
 library(kableExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
 #load("C:/Users/Pedro/Desktop/Pedro/Github/Estatistica/Mixed_Models/lme_env.RData")
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # Longitudinal Data
@@ -254,14 +255,21 @@ frango <- groupedData(
 )
 
 plot(frango, between = list(y = c(0, 0.5, 0)))
-plot(frango, outer = T, key=FALSE) # key omite a legenda
-
-interaction.plot(frango$Time,frango$Diet,frango$weight,ylab="Peso (g)", xlab="Tempo (semana)")
 ```
 
 The first plot show us a different inclination for each chicken, when taken Weigth in relation with Time, which shown us a possible random effects of the the inclination of the line, but is not shown a possible random effect on the intercepto. By a closer observation on the same plot can be shown a possible quadratic effect, so in the model will be added on the model, and after de decision of the model, we will make a anova to see if that quadratic coef is significative in relation with the model without it.
 
+```{r}
+plot(frango, outer = T, key=FALSE) # key omite a legenda
+```
+
+
 By the second graph, it gives us a good visual effect a high variation of the mean weigth for each chicken in time for each Diet, what give us a good intuition that exist a random effect for this case.
+
+```{r}
+interaction.plot(frango$Time,frango$Diet,frango$weight,ylab="Peso (g)", xlab="Tempo (semana)")
+```
+
 
 For the last graph, is a good plot to show a possible difference on the effect for each Diet.
 
