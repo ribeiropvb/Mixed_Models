@@ -19,6 +19,7 @@ library(lme4)
 library(nlme)
 library(kableExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
+#load("C:/Users/Pedro/Desktop/Pedro/Github/Estatistica/Mixed_Models/lme_env.RData")
 ```
 
 # Longitudinal Data
@@ -199,9 +200,9 @@ Some exemples of covariante structure, considering $n_i = 4$:
 
 the `ChickWeight` available on r by using the code `data("ChickWeight")`, is a data that containg 578 row and 4 variable, which measure 50 different chickens on 12 different times where the model contains some datas which some missing value that are not  explicit on the data it self.
 
-For exemple, the Chicken number 18 has only been measure on the time 0 and the subsequent time. The help (`help(data("ChickWeight"))`) of the database doesn't provite us the explanation of why that occours.
+For exemple, the Chicken number 18 has only been measure on the time 0 and not on the subsequent time. The help (`help(data("ChickWeight"))`) of the database doesn't provite us the explanation/detail of why that occours.
 
-In the present work, we will be discarting those cases where is not complete, as defined in the beginning, since is one of the assumptions of the model, but that problem can be solved by using a different mode, such as Generalized Linear Mixed Models, considering a distribuition capable of fitting data with "censor", or even by using an non-parametric analysis.
+In the present work, we will be discarting those cases where the data is not complete, as defined in the beginning, since is one of the assumptions of the model, but that problem can be solved by using a different mode, such as Generalized Linear Mixed Models, considering a distribuition capable of fitting data with "censor", or even by using an non-parametric analysis or Random Forest.
 
 But since the presence of NA is only in 5 cases (8,15,16,18,44) was decided to drop the data for lack of good technical features. The absence of which observation can be seen on the table bellow.
 
@@ -239,8 +240,12 @@ tab1 %>%
   )
 ```
 
+Now we'll give some descriptive analisys of the data to help us to get some help for the decision of the implentation of the random effects.
+
 ```{r}
 data("ChickWeight")
+ChickWeight %<>%
+  filter(!Chick %in% c(8,15,16,18,44))
 
 frango <- groupedData(
   weight~Time|Chick, outer = ~Diet, data = ChickWeight,
@@ -254,41 +259,53 @@ plot(frango, outer = T, key=FALSE) # key omite a legenda
 interaction.plot(frango$Time,frango$Diet,frango$weight,ylab="Peso (g)", xlab="Tempo (semana)")
 ```
 
-Por tanto podemos observar que os perfis individuais apresentados para cada frango diferem entre si, apresentando um perfil médio o qual apresenta uma clara modificação na variância, quando observado o peso em relação ao tempo, perfil o qual, varia de acordo com cada dieta utilizada.
+The first plot show us a different inclination for each chicken, when taken Weigth in relation with Time, which shown us a possible random effects of the the inclination of the line, but is not shown a possible random effect on the intercepto. By a closer observation on the same plot can be shown a possible quadratic effect, so in the model will be added on the model, and after de decision of the model, we will make a anova to see if that quadratic coef is significative in relation with the model without it.
 
+By the second graph, it gives us a good visual effect a high variation of the mean weigth for each chicken in time for each Diet, what give us a good intuition that exist a random effect for this case.
+
+For the last graph, is a good plot to show a possible difference on the effect for each Diet.
 
 ```{r}
 mod1 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~1,
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod2 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~ Diet,
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod3 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~Time,
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod4 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~Time + Diet,
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod5 <- lme(
-  fixed = weight~Time+Diet+Time:Diet,
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~Time + Diet + Time:Diet,
   data = frango,
   control = lmeControl(opt="optim")
 )
 ```
+
+```{r}
+tibble(
+  Modelo = paste('Modelo',1:5),
+  AIC = c(AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4),AIC(mod5)),
+  BIC = c(BIC(mod1),BIC(mod2),BIC(mod3),BIC(mod4),BIC(mod5))
+) %>% arrange(BIC,AIC)
+```
+
 
 ```{r, results = 'asis'}
 coef(mod3) %>%
@@ -298,4 +315,115 @@ coef(mod3) %>%
 
 
 
+## Changing the correlation matrix structure
+
+```{r}
+mod3_corAR1 <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corAR1()
+)
+mod3_corARMA <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corARMA(p = 0, q = 2)
+)
+mod3_corCAR1 <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corCAR1(form = ~Time)
+)
+mod3_corCompSymm <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corCompSymm()
+)
+mod3_corExp <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corExp(form = ~Time)
+)
+mod3_corGaus <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corGaus(form = ~Time)
+)
+mod3_corLin <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corLin(form = ~Time)
+)
+mod3_corRatio <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corRatio(form = ~Time)
+)
+mod3_corSpher <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corSpher(form = ~ Time)
+)
+mod3_corSymm <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim"),
+  correlation = corSymm(form = ~ 1|Chick, fixed = T)
+)
+```
+
+```{r}
+lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time+I(Time^2),
+  data = frango,
+  control = lmeControl(opt="optim")
+) %>% AIC()
+```
+
+
+```{r}
+tibble(
+  modelo = c(
+    'mod3_corAR1','mod3_corARMA02','mod3_corCAR1',
+    'mod3_corCompSymm','mod3_corExp','mod3_corGaus',
+    'mod3_corLin','mod3_corRatio','mod3_corSpher',
+    'mod3_corSymm'
+  ),
+  AIC = c(
+    AIC(mod3_corAR1),AIC(mod3_corARMA),AIC(mod3_corCAR1),
+    AIC(mod3_corCompSymm),AIC(mod3_corExp),AIC(mod3_corGaus),
+    AIC(mod3_corLin),AIC(mod3_corRatio),AIC(mod3_corSpher),
+    AIC(mod3_corSymm)
+  ),
+  BIC = c(
+    BIC(mod3_corAR1),BIC(mod3_corARMA),BIC(mod3_corCAR1),
+    BIC(mod3_corCompSymm),BIC(mod3_corExp),BIC(mod3_corGaus),
+    BIC(mod3_corLin),BIC(mod3_corRatio),BIC(mod3_corSpher),
+    BIC(mod3_corSymm)
+  )
+) %>% arrange(AIC,BIC)
+```
+
+```{r}
+
+```
 
