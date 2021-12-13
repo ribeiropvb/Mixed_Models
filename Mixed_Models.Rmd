@@ -18,6 +18,8 @@ library(magrittr)
 library(lme4)
 library(nlme)
 library(kableExtra)
+library(lattice)
+library(latticeExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
 #load("C:/Users/Pedro/Desktop/Pedro/Github/Estatistica/Mixed_Models/lme_env.RData")
 knitr::opts_chunk$set(echo = FALSE)
@@ -273,7 +275,7 @@ interaction.plot(frango$Time,frango$Diet,frango$weight,ylab="Peso (g)", xlab="Te
 
 For the last graph, is a good plot to show a possible difference on the effect for each Diet.
 
-```{r}
+```{r, echo = T}
 mod1 <- lme(
   fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~1,
@@ -288,17 +290,23 @@ mod2 <- lme(
 )
 mod3 <- lme(
   fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
-  random = ~Time,
+  random = ~Time+I(Time^2),
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod4 <- lme(
   fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
-  random = ~Time + Diet,
+  random = ~Time,
   data = frango,
   control = lmeControl(opt="optim")
 )
 mod5 <- lme(
+  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
+  random = ~Time + Diet,
+  data = frango,
+  control = lmeControl(opt="optim")
+)
+mod6 <- lme(
   fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~Time + Diet + Time:Diet,
   data = frango,
@@ -306,14 +314,24 @@ mod5 <- lme(
 )
 ```
 
+So we did the modelling of the models, which can be seen in the code above. We mainly worked with the random effect part using the same fixed effect for them, based of the descriptive analysis that we made. So we made a table showing the AIC and BIC of the fitted models. Where AIC and BIC can be difined as:
+
+\begin{equation}
+\begin{aligned}
+    AIC =& -2(ln(\hat{L}) - 2k) \\
+    BIC =& kln(n) - 2ln(\hat{L}) \label{AICBIC}
+\end{aligned}
+\end{equation}
+
 ```{r}
 tibble(
-  Modelo = paste('Modelo',1:5),
-  AIC = c(AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4),AIC(mod5)),
-  BIC = c(BIC(mod1),BIC(mod2),BIC(mod3),BIC(mod4),BIC(mod5))
+  Modelo = paste('Modelo',1:6),
+  AIC = c(AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4),AIC(mod5),AIC(mod6)),
+  BIC = c(BIC(mod1),BIC(mod2),BIC(mod3),BIC(mod4),BIC(mod5),BIC(mod6))
 ) %>% arrange(BIC,AIC)
 ```
 
+So the model that gave the lower values for AIC and for BIC the the model 3, which the random effect is added only for the intercept and Time, but looked as a quadradic function. Which lead us to the coeficients on the table bellow:
 
 ```{r, results = 'asis'}
 coef(mod3) %>%
@@ -321,11 +339,13 @@ coef(mod3) %>%
   kable(format = "latex", booktabs = TRUE)
 ```
 
-
+It's interesting to note that the estimated coefficients for the intercept and for Time is different for each row, where that row represent each chicken looked in the model (45 chickens), but the others effect are not. Which is why we only added the random effect on these coefficients therefore the coefficients that we did not list, there's no random effect, only fixed effects.
 
 ## Changing the correlation matrix structure
 
-```{r}
+Here we'll give a quick looked on who we can add a different correlation structure on the selected models.
+
+```{r, echo = T}
 mod3_corAR1 <- lme(
   fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
   random = ~Time+I(Time^2),
@@ -398,15 +418,13 @@ mod3_corSymm <- lme(
 )
 ```
 
-```{r}
-lme(
-  fixed = weight~Time+I(Time^2)+Diet+Time:Diet,
-  random = ~Time+I(Time^2),
-  data = frango,
-  control = lmeControl(opt="optim")
-) %>% AIC()
-```
+As said before the selection of the models used can be (and usualy is) a big problem and might require a huge theorical statistcal background, so in these document we'll talk about someways, to select those models, and we'll not enter on the specifics on why the selection of the specific parameters were made.
 
+Because the explanation will depend for the specific structure, but in a nutshell, the selection can be think on how the correlation matrix behave and if it "fits", on the structures shown bellow.
+
+Note that not aways the models converge, problem that is more commom for the correlation structure that can correlate to the "Time Series" problems, such as the AR and ARMA models. That behavior is shown when the roots of the models cannot be but inside a circle on ratio 1. For more details i highly sugest a good read on stationarity and unit roots for ARIMA Process \footnote{Some read sugestion: \href{https://medium.com/analytics-vidhya/a-complete-introduction-to-time-series-analysis-with-r-arma-processes-part-ii-85a6bb5becae}{Link 1} and \href{https://staff.fnwi.uva.nl/p.j.c.spreij/onderwijs/master/aadtimeseries2010.pdf}{Link 2}}
+
+# Interpretation of the models and model selection
 
 ```{r}
 tibble(
@@ -431,7 +449,58 @@ tibble(
 ) %>% arrange(AIC,BIC)
 ```
 
-```{r}
+Using the AIC and BIC values to select the model we have that the lower value is related to "mod3_corRatio", but we can see some problems with the fitted values and the residual of the model.
 
+```{r}
+plot(augPred(mod3_corRatio), layout = c(5,3), between = list(y=c(2,1)))
 ```
+
+In the plot above we can see some cases which the fitted line does not have a good fit, mainly on the cases where the quadratic coefficient could be relevant.
+
+```{r}
+plot(mod3_corRatio)
+```
+
+In the graph above is made a dispersion point for the fitted values and the standardized residuals, in here we can clearly see a pattern in a shape of a funil on the left side of the plot.
+
+```{r}
+plot(mod3_corRatio,Chick~resid(.), abline = 0)
+```
+
+Lastly we see some cases which the value 0 is not inside the variation of the boxplot, which is a indication that the coeficient for the specific chicken is not significative.
+
+So for the selected models we do not have good residuals, but why that occours? Since we show that the specific data might have a good response for the Mixed Models, a short answer is that the AIC and BIC values they are not good for the selection of this type of model, since the models have a great ammount of parameters and both values (AIC and BIC) penalized the model for the number of parameters they have, which can be shown in the equation \ref{AICBIC}, they're not good for the selection for Mixed Models \footnote{More details can be seen in Singer \& Rocha (2018), Selection of terms in random coefficient regression models; and Singer, Nobre \& Rocha Análise de dados longitudinais (Portuguese)}.
+
+# Model Comparison
+
+A correlation structure that usually have good results is the Not structured one, som we will used it to make some comparisons with the model selected for the AIC and BIC values. First of all we will make a Nested Model Test.
+
+```{r, echo = T}
+anova(mod3_corSymm,mod3_corRatio)
+```
+
+
+```{r}
+plot(augPred(mod3_corSymm), layout = c(5,3), between = list(y=c(2,1)))
+```
+
+Comparing the fit of the data with the other model we can clearly see a better fit for the data in all chickens, which also means that these model fit the quadratic effect better.
+
+```{r}
+plot(mod3_corSymm)
+```
+
+For the Fitted Values x Standardized residuals plot, we can see an more random distribution of the point, that are mainly centered in the -2, 2 interval.
+
+```{r}
+plot(mod3_corSymm,Chick~resid(.), abline = 0)
+```
+
+At last we see that all interval have the value 0, which is a good for the model.
+
+# Conclusion
+
+Given the analysis and all explanation above we can say that the model used all the parameter, plus a quadratic function for time, in the fixed model and the quadradric funtion for time in the random value, with a not structured correlation structure is a good model for fit the weigth of a chicken depending on a Diet that they have.
+
+The structure and theory used in the present document can be used in a great variation of cases that can be seen as a Longitudinal data or the analist have a perception of a presence of a random effect that alter the variance over time (second plot of the descriptive section). As said before i higly sugest a more deep dive on the theory to better understanding of the model, the link and articles suggested can be a good start.
 
