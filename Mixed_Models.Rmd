@@ -21,7 +21,7 @@ library(kableExtra)
 library(lattice)
 library(latticeExtra)
 dados <- read_table2("https://raw.githubusercontent.com/ranalytics/r-tutorials/master/Edition_2015/Data/RIKZ.txt")
-#load("C:/Users/Pedro/Desktop/Pedro/Github/Estatistica/Mixed_Models/lme_env.RData")
+#load("lme_env.RData")
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
